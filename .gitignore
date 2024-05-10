@@ -4,3 +4,4 @@ plots/
 .vscode
 data
 lightning_logs*
+cache

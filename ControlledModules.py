@@ -233,6 +233,7 @@ class EventControllerNet(ControlledNetwork):
         max_train_steps=10,
         positive_control=0.03,
         alpha_stdp=1.0,  # ratio A+/A-
+        neuromorphic_frames=False,
     ):
         super().__init__(
             layers=layers, batch_size=batch_size, mode="spiking",
@@ -243,6 +244,7 @@ class EventControllerNet(ControlledNetwork):
         self.max_val_steps = max_val_steps
         self.max_train_steps = max_train_steps
         self.positive_control = positive_control
+        self.neuromorphic_frames = neuromorphic_frames
 
     def evolve_controller(self, current_output, one_hot_target, i):
         # this is -1 when there is a spike and it's NOT on the target
@@ -252,8 +254,8 @@ class EventControllerNet(ControlledNetwork):
 
     def evolve_to_convergence(self, x, target):
         self.reset()
-        for n_iter in range(self.max_train_steps):
-            output = self(x, self.c)
+        for n_iter in range(x.shape[1] if self.neuromorphic_frames else self.max_train_steps):
+            output = self(x.transpose(0,1)[n_iter] if self.neuromorphic_frames else x, self.c)
             self.evolve_controller(output, target, n_iter)
 
         return n_iter
@@ -282,8 +284,8 @@ class EventControllerNet(ControlledNetwork):
 
         self.reset()
         spikes = []
-        for i in range(self.max_val_steps):
-            out = self.feedforward(x).detach().cpu().numpy()
+        for i in range(x.shape[1] if self.neuromorphic_frames else self.max_val_steps):
+            out = self.feedforward(x.transpose(0,1)[i] if self.neuromorphic_frames else x).detach().cpu().numpy()
             spikes.append(out)
 
         spikes = np.array(spikes)

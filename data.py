@@ -2,6 +2,9 @@ import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision.datasets import MNIST
 from torchvision import transforms as tr
+from tonic.datasets import NMNIST
+from tonic import transforms as ttr
+from tonic import DiskCachedDataset
 import pytorch_lightning as pl
 
 
@@ -42,6 +45,53 @@ class MNISTDataModule(pl.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.mnist_test,
+            batch_size=self.batch_size,
+            num_workers=8,
+            pin_memory=True,
+        )
+
+
+class NMNISTDataModule(pl.LightningDataModule):
+    def __init__(self, data_dir: str = "data/", batch_size: int = 32):
+        super().__init__()
+        self.data_dir = data_dir
+        self.batch_size = batch_size
+        self.transform = ttr.Compose(
+            [
+                ttr.Denoise(filter_time=10000),
+                ttr.ToFrame(sensor_size=NMNIST.sensor_size,
+                            n_time_bins=100),
+                torch.from_numpy,
+                torch.nn.Flatten(start_dim=1),
+                lambda x: x / x.max()
+            ],
+        )
+
+    def setup(self, stage: str):
+        self.nmnist_test = DiskCachedDataset(NMNIST(self.data_dir, train=False, transform=self.transform), cache_path='./cache/nmnist/test')
+        nmnist_full = DiskCachedDataset(NMNIST(self.data_dir, train=True, transform=self.transform), cache_path='./cache/nmnist/train')
+        self.nmnist_train, self.nmnist_val = random_split(nmnist_full, [55000, 5000])
+
+    def train_dataloader(self):
+        return DataLoader(
+            self.nmnist_train,
+            batch_size=self.batch_size,
+            shuffle=True,
+            num_workers=2,
+            pin_memory=True,
+        )
+
+    def val_dataloader(self):
+        return DataLoader(
+            self.nmnist_val,
+            batch_size=self.batch_size,
+            num_workers=2,
+            pin_memory=True,
+        )
+
+    def test_dataloader(self):
+        return DataLoader(
+            self.nmnist_test,
             batch_size=self.batch_size,
             num_workers=8,
             pin_memory=True,
