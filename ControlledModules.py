@@ -254,8 +254,8 @@ class EventControllerNet(ControlledNetwork):
 
     def evolve_to_convergence(self, x, target):
         self.reset()
-        for n_iter in range(x.shape[1] if self.neuromorphic_frames else self.max_train_steps):
-            output = self(x.transpose(0,1)[n_iter] if self.neuromorphic_frames else x, self.c)
+        for n_iter in range(x.shape[0] if self.neuromorphic_frames else self.max_train_steps):
+            output = self(x[n_iter] if self.neuromorphic_frames else x, self.c)
             self.evolve_controller(output, target, n_iter)
 
         return n_iter
@@ -271,6 +271,7 @@ class EventControllerNet(ControlledNetwork):
         # FORWARD, with controller controlling
         n_iter = self.evolve_to_convergence(x, target)
         optim.step()
+        self.initialize_as_dfc()
 
         self.log("iter_to_target", n_iter)
         optim.zero_grad()
@@ -284,8 +285,8 @@ class EventControllerNet(ControlledNetwork):
 
         self.reset()
         spikes = []
-        for i in range(x.shape[1] if self.neuromorphic_frames else self.max_val_steps):
-            out = self.feedforward(x.transpose(0,1)[i] if self.neuromorphic_frames else x).detach().cpu().numpy()
+        for i in range(x.shape[0] if self.neuromorphic_frames else self.max_val_steps):
+            out = self.feedforward(x[i] if self.neuromorphic_frames else x).detach().cpu().numpy()
             spikes.append(out)
 
         spikes = np.array(spikes)

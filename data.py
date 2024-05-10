@@ -5,6 +5,7 @@ from torchvision import transforms as tr
 from tonic.datasets import NMNIST
 from tonic import transforms as ttr
 from tonic import DiskCachedDataset
+from tonic.collation import PadTensors
 import pytorch_lightning as pl
 
 
@@ -60,10 +61,10 @@ class NMNISTDataModule(pl.LightningDataModule):
             [
                 ttr.Denoise(filter_time=10000),
                 ttr.ToFrame(sensor_size=NMNIST.sensor_size,
-                            n_time_bins=100),
+                            time_window=1000),
                 torch.from_numpy,
                 torch.nn.Flatten(start_dim=1),
-                lambda x: x / x.max()
+                lambda x: x.bool().int(),
             ],
         )
 
@@ -76,6 +77,7 @@ class NMNISTDataModule(pl.LightningDataModule):
         return DataLoader(
             self.nmnist_train,
             batch_size=self.batch_size,
+            collate_fn=PadTensors(batch_first=False),
             shuffle=True,
             num_workers=2,
             pin_memory=True,
@@ -85,6 +87,7 @@ class NMNISTDataModule(pl.LightningDataModule):
         return DataLoader(
             self.nmnist_val,
             batch_size=self.batch_size,
+            collate_fn=PadTensors(batch_first=False),
             num_workers=2,
             pin_memory=True,
         )
@@ -93,6 +96,7 @@ class NMNISTDataModule(pl.LightningDataModule):
         return DataLoader(
             self.nmnist_test,
             batch_size=self.batch_size,
+            collate_fn=PadTensors(batch_first=False),
             num_workers=8,
             pin_memory=True,
         )
