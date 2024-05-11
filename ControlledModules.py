@@ -271,7 +271,6 @@ class EventControllerNet(ControlledNetwork):
         # FORWARD, with controller controlling
         n_iter = self.evolve_to_convergence(x, target)
         optim.step()
-        self.initialize_as_dfc()
 
         self.log("iter_to_target", n_iter)
         optim.zero_grad()
