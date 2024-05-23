@@ -252,8 +252,8 @@ class EventControllerNet(ControlledNetwork):
 
     def evolve_to_convergence(self, x, target):
         self.reset()
-        for n_iter in range(self.max_train_steps):
-            output = self(x, self.c)
+        for n_iter in range(x.shape[0] if x.ndim == 3 else self.max_train_steps):
+            output = self(x[n_iter] if x.ndim == 3 else x, self.c)
             self.evolve_controller(output, target, n_iter)
 
         return n_iter
@@ -269,6 +269,7 @@ class EventControllerNet(ControlledNetwork):
         # FORWARD, with controller controlling
         n_iter = self.evolve_to_convergence(x, target)
         optim.step()
+        self.initialize_as_dfc()
 
         self.log("iter_to_target", n_iter)
         optim.zero_grad()
@@ -282,8 +283,8 @@ class EventControllerNet(ControlledNetwork):
 
         self.reset()
         spikes = []
-        for i in range(self.max_val_steps):
-            out = self.feedforward(x).detach().cpu().numpy()
+        for i in range(x.shape[0] if x.ndim == 3 else self.max_val_steps):
+            out = self.feedforward(x[i] if x.ndim == 3 else x).detach().cpu().numpy()
             spikes.append(out)
 
         spikes = np.array(spikes)
