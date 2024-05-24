@@ -89,13 +89,22 @@ class NMNISTDataModule(pl.LightningDataModule):
         )
 
     def val_dataloader(self):
-        return DataLoader(
-            self.nmnist_val,
-            batch_size=self.batch_size,
-            collate_fn=PadTensors(batch_first=False),
-            num_workers=2,
-            pin_memory=True,
-        )
+        return [
+            DataLoader(
+                self.nmnist_val,
+                batch_size=self.batch_size,
+                collate_fn=PadTensors(batch_first=False),
+                num_workers=2,
+                pin_memory=True,
+            ),
+            DataLoader(
+                self.nmnist_train,
+                batch_size=self.batch_size,
+                collate_fn=PadTensors(batch_first=False),
+                num_workers=2,
+                pin_memory=True,
+            )
+        ]
 
     def test_dataloader(self):
         return DataLoader(

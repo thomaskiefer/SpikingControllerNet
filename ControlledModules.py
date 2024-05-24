@@ -274,7 +274,7 @@ class EventControllerNet(ControlledNetwork):
         self.log("iter_to_target", n_iter)
         optim.zero_grad()
 
-    def validation_step(self, data, idx):
+    def validation_step(self, data, idx, dataloader_idx=0):
         optim = self.optimizers().optimizer
         x, y = data
         target = F.one_hot(y, num_classes=10)
@@ -296,7 +296,7 @@ class EventControllerNet(ControlledNetwork):
         counts = np.concatenate((counts, np.ones((1, self.batch_size))))
         latency = np.mean([ np.argwhere(bi).min() for bi in (np.concatenate((counts, np.ones((1, self.batch_size)))) > 0).T ])
 
-        self.log("acc_val", correct)
-        self.log("val_latency", latency)
+        self.log("acc_val" if dataloader_idx == 0 else "acc_train", correct)
+        self.log("val_latency" if dataloader_idx == 0 else "train_latency", latency)
     
         optim.zero_grad()
